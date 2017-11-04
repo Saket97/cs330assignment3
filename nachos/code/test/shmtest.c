@@ -9,6 +9,8 @@ main()
     int x, i;
     array[0] = 0;
     array[1] = 100;
+    syscall_wrapper_PrintString("Hello World\n");
+       syscall_wrapper_PrintInt(array[1]);
 
     x = syscall_wrapper_Fork();
     if (x == 0) {
@@ -16,7 +18,7 @@ main()
        for (i=0; i<NUM_ITER; i++) {
           array[0]++;
        }
-       
+       syscall_wrapper_PrintString("Completed Parent\n");
     }
     else {
        array[1] = 200;

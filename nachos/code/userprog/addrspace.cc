@@ -18,7 +18,7 @@
 #include "copyright.h"
 #include "system.h"
 #include "addrspace.h"
-#include "noff.h"
+
 
 //----------------------------------------------------------------------
 // SwapHeader
@@ -57,14 +57,20 @@ SwapHeader (NoffHeader *noffH)
 //	"executable" is the file containing the object code to load into memory
 //----------------------------------------------------------------------
 
-ProcessAddressSpace::ProcessAddressSpace(OpenFile *executable)
+ProcessAddressSpace::ProcessAddressSpace(OpenFile *executable, char* f)
 {
-    NoffHeader noffH;
+    // NoffHeader noffH;
     unsigned int i, size;
     unsigned vpn, offset;
     TranslationEntry *entry;
     unsigned int pageFrame;
-
+    filename = new char[1024];
+    for (int i = 0; i < 1024; ++i)
+    {
+        filename[i] = f[i];
+        if (f[i] == '\n' || f[i] == '\0')
+            break;        
+    }
     executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
     if ((noffH.noffMagic != NOFFMAGIC) && 
 		(WordToHost(noffH.noffMagic) == NOFFMAGIC))
@@ -90,7 +96,7 @@ ProcessAddressSpace::ProcessAddressSpace(OpenFile *executable)
     for (i = 0; i < numVirtualPages; i++) {
 	KernelPageTable[i].virtualPage = i;
 	KernelPageTable[i].physicalPage = i+numPagesAllocated;
-	KernelPageTable[i].valid = TRUE;
+	KernelPageTable[i].valid = FALSE;
 	KernelPageTable[i].use = FALSE;
 	KernelPageTable[i].dirty = FALSE;
 	KernelPageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
@@ -102,29 +108,30 @@ ProcessAddressSpace::ProcessAddressSpace(OpenFile *executable)
 // and the stack segment
     bzero(&machine->mainMemory[numPagesAllocated*PageSize], size);
  
-    numPagesAllocated += numVirtualPages;
+ // We dont need this for demand paging
+    // numPagesAllocated += numVirtualPages;
 
-// then, copy in the code and data segments into memory
-    if (noffH.code.size > 0) {
-        DEBUG('a', "Initializing code segment, at 0x%x, size %d\n",
-			noffH.code.virtualAddr, noffH.code.size);
-        vpn = noffH.code.virtualAddr/PageSize;
-        offset = noffH.code.virtualAddr%PageSize;
-        entry = &KernelPageTable[vpn];
-        pageFrame = entry->physicalPage;
-        executable->ReadAt(&(machine->mainMemory[pageFrame * PageSize + offset]),
-			noffH.code.size, noffH.code.inFileAddr);
-    }
-    if (noffH.initData.size > 0) {
-        DEBUG('a', "Initializing data segment, at 0x%x, size %d\n", 
-			noffH.initData.virtualAddr, noffH.initData.size);
-        vpn = noffH.initData.virtualAddr/PageSize;
-        offset = noffH.initData.virtualAddr%PageSize;
-        entry = &KernelPageTable[vpn];
-        pageFrame = entry->physicalPage;
-        executable->ReadAt(&(machine->mainMemory[pageFrame * PageSize + offset]),
-			noffH.initData.size, noffH.initData.inFileAddr);
-    }
+// // then, copy in the code and data segments into memory
+//     if (noffH.code.size > 0) {
+//         DEBUG('a', "Initializing code segment, at 0x%x, size %d\n",
+// 			noffH.code.virtualAddr, noffH.code.size);
+//         vpn = noffH.code.virtualAddr/PageSize;
+//         offset = noffH.code.virtualAddr%PageSize;
+//         entry = &KernelPageTable[vpn];
+//         pageFrame = entry->physicalPage;
+//         executable->ReadAt(&(machine->mainMemory[pageFrame * PageSize + offset]),
+// 			noffH.code.size, noffH.code.inFileAddr);
+//     }
+//     if (noffH.initData.size > 0) {
+//         DEBUG('a', "Initializing data segment, at 0x%x, size %d\n", 
+// 			noffH.initData.virtualAddr, noffH.initData.size);
+//         vpn = noffH.initData.virtualAddr/PageSize;
+//         offset = noffH.initData.virtualAddr%PageSize;
+//         entry = &KernelPageTable[vpn];
+//         pageFrame = entry->physicalPage;
+//         executable->ReadAt(&(machine->mainMemory[pageFrame * PageSize + offset]),
+// 			noffH.initData.size, noffH.initData.inFileAddr);
+//     }
 
 }
 
@@ -148,7 +155,13 @@ ProcessAddressSpace::ProcessAddressSpace(ProcessAddressSpace *parentSpace)
     // first, set up the translation
     TranslationEntry* parentPageTable = parentSpace->GetPageTable();
     KernelPageTable = new TranslationEntry[numVirtualPages];
-    
+    filename = new char[1024];
+    for (int i = 0; i < 1024; ++i)
+    {
+        filename[i] = parentSpace->filename[i];
+        if (filename[i] == '\0' || filename[i] == '\n')
+            break;
+    }
     int pagesAssigned = 0;
 
     for (i = 0; i < numVirtualPages; i++) {
@@ -307,4 +320,52 @@ ProcessAddressSpace::sharedMemory(int numSharedPages)
     RestoreContextOnSwitch();
     delete parentPageTable;
     return virtualAddressStarting;
+}
+
+unsigned
+ProcessAddressSpace::GetPhysicalPage(unsigned vpn)
+{
+    // Assuming that we have to allocate a new page everytime the page is accessed. Change this suitably for different replacement algorithms
+    numPagesAllocated += 1;
+    return numPagesAllocated-1;
+}
+
+void
+ProcessAddressSpace::CopyPageData(unsigned vpn, bool useNoffH)
+{
+    if (useNoffH)
+    {
+        unsigned startCopyAddr = vpn*PageSize;
+        OpenFile *executable = fileSystem->Open(filename);
+        // printf("for code: %d size: %d  for initdata:%d size:%d\n",noffH.code.inFileAddr, noffH.code.size, noffH.initData.inFileAddr, noffH.initData.size );
+        if (startCopyAddr >= noffH.code.virtualAddr && startCopyAddr < noffH.code.virtualAddr+noffH.code.size)
+        {
+            unsigned i, ppn = KernelPageTable[vpn].physicalPage;
+            executable->ReadAt(&(machine->mainMemory[ppn*PageSize]), PageSize, noffH.code.inFileAddr+startCopyAddr-noffH.code.virtualAddr);
+        }
+        if (startCopyAddr >= noffH.initData.virtualAddr && startCopyAddr < noffH.initData.virtualAddr+noffH.initData.size)
+        {
+            unsigned i,ppn = KernelPageTable[vpn].physicalPage;
+            executable->ReadAt(&(machine->mainMemory[ppn*PageSize]), PageSize, noffH.initData.inFileAddr+startCopyAddr-noffH.initData.virtualAddr);
+        }
+        currentThread->SortedInsertInWaitQueue(1000+stats->totalTicks);
+    }
+}
+
+void
+ProcessAddressSpace::PageFaultHandler(unsigned vaddr)
+{
+    unsigned vpn = vaddr/PageSize;
+    unsigned ppn = GetPhysicalPage(vpn);
+    KernelPageTable[vpn].virtualPage = vpn;
+	KernelPageTable[vpn].physicalPage = ppn;
+	KernelPageTable[vpn].valid = TRUE;
+	KernelPageTable[vpn].use = FALSE;
+	KernelPageTable[vpn].dirty = FALSE;
+	KernelPageTable[vpn].readOnly = FALSE;  // if the code segment was entirely on 
+					// a separate page, we could set its 
+					// pages to be read-only
+    KernelPageTable[vpn].shared = FALSE;
+    DEBUG('a', "Page fault detected for %d virtual address vpn: %d. Loading Physical page into memory\n", vaddr, vpn);    
+    CopyPageData(vpn, true);
 }

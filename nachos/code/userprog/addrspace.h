@@ -15,12 +15,13 @@
 
 #include "copyright.h"
 #include "filesys.h"
+#include "noff.h"
 
 #define UserStackSize		1024 	// increase this as necessary!
 
 class ProcessAddressSpace {
   public:
-    ProcessAddressSpace(OpenFile *executable);	// Create an address space,
+    ProcessAddressSpace(OpenFile *executable, char* buffer);	// Create an address space,
 					// initializing it with the program
 					// stored in the file "executable"
 
@@ -38,6 +39,11 @@ class ProcessAddressSpace {
 
     TranslationEntry* GetPageTable();
     unsigned sharedMemory(int numSharedPages);
+    void PageFaultHandler(unsigned vaddr);
+    unsigned GetPhysicalPage(unsigned vpn);
+    void CopyPageData(unsigned vpn, bool useNoffH);
+    NoffHeader noffH;
+    char* filename;
   private:
     TranslationEntry *KernelPageTable;	// Assume linear page table translation
 					// for now!

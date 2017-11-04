@@ -214,8 +214,8 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 			virtAddr, KernelPageTableSize);
 	    return AddressErrorException;
 	} else if (!KernelPageTable[vpn].valid) {
-	    DEBUG('a', "virtual page # %d too large for page table size %d!\n", 
-			virtAddr, KernelPageTableSize);
+	    DEBUG('a', "PageFaultException virtual page # %d too large for page table size %d! vpn:%d\n", 
+			virtAddr, KernelPageTableSize, vpn);
 	    return PageFaultException;
 	}
 	entry = &KernelPageTable[vpn];
