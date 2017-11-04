@@ -156,6 +156,7 @@ ProcessAddressSpace::ProcessAddressSpace(ProcessAddressSpace *parentSpace)
     TranslationEntry* parentPageTable = parentSpace->GetPageTable();
     KernelPageTable = new TranslationEntry[numVirtualPages];
     filename = new char[1024];
+    noffH = parentSpace->noffH;
     for (int i = 0; i < 1024; ++i)
     {
         filename[i] = parentSpace->filename[i];
@@ -169,8 +170,12 @@ ProcessAddressSpace::ProcessAddressSpace(ProcessAddressSpace *parentSpace)
         if (parentPageTable[i].shared) {
             KernelPageTable[i].physicalPage = parentPageTable[i].physicalPage;    
         } else {
-            KernelPageTable[i].physicalPage = numPagesAllocated + pagesAssigned;
-            pagesAssigned += 1;
+            if (parentPageTable[i].valid == TRUE){
+                KernelPageTable[i].physicalPage = numPagesAllocated + pagesAssigned;
+                pagesAssigned += 1;
+            }
+            else
+                KernelPageTable[i].physicalPage = 0;
         }
         KernelPageTable[i].valid = parentPageTable[i].valid;
         KernelPageTable[i].use = parentPageTable[i].use;
@@ -191,7 +196,7 @@ ProcessAddressSpace::ProcessAddressSpace(ProcessAddressSpace *parentSpace)
     int j;
     for (i = 0; i < numVirtualPages; i++)
     {
-        if (KernelPageTable[i].shared == FALSE)
+        if (KernelPageTable[i].shared == FALSE && KernelPageTable[i].valid == TRUE)
         {
             for (j = 0; j < PageSize; ++j)
             {
@@ -201,6 +206,7 @@ ProcessAddressSpace::ProcessAddressSpace(ProcessAddressSpace *parentSpace)
     }
 
     numPagesAllocated += pagesAssigned;
+    stats->totalPageFaults++;
 }
 
 //----------------------------------------------------------------------
@@ -310,6 +316,7 @@ ProcessAddressSpace::sharedMemory(int numSharedPages)
 	    				// a separate page, we could set its 
 	    				// pages to be read-only
         KernelPageTable1[i].shared = TRUE;
+        stats->totalPageFaults++;
     }
     numPagesAllocated += numSharedPages;
     KernelPageTable = KernelPageTable1;
@@ -335,19 +342,11 @@ ProcessAddressSpace::CopyPageData(unsigned vpn, bool useNoffH)
 {
     if (useNoffH)
     {
-        unsigned startCopyAddr = vpn*PageSize;
+        unsigned startCopyAddr = vpn*PageSize, ppn = KernelPageTable[vpn].physicalPage;
         OpenFile *executable = fileSystem->Open(filename);
-        // printf("for code: %d size: %d  for initdata:%d size:%d\n",noffH.code.inFileAddr, noffH.code.size, noffH.initData.inFileAddr, noffH.initData.size );
-        if (startCopyAddr >= noffH.code.virtualAddr && startCopyAddr < noffH.code.virtualAddr+noffH.code.size)
-        {
-            unsigned i, ppn = KernelPageTable[vpn].physicalPage;
-            executable->ReadAt(&(machine->mainMemory[ppn*PageSize]), PageSize, noffH.code.inFileAddr+startCopyAddr-noffH.code.virtualAddr);
-        }
-        if (startCopyAddr >= noffH.initData.virtualAddr && startCopyAddr < noffH.initData.virtualAddr+noffH.initData.size)
-        {
-            unsigned i,ppn = KernelPageTable[vpn].physicalPage;
-            executable->ReadAt(&(machine->mainMemory[ppn*PageSize]), PageSize, noffH.initData.inFileAddr+startCopyAddr-noffH.initData.virtualAddr);
-        }
+        printf("noffH.code.virtualAddr: %d\n", noffH.code.virtualAddr);
+        executable->ReadAt(&(machine->mainMemory[ppn * PageSize]), PageSize, noffH.code.inFileAddr + startCopyAddr - noffH.code.virtualAddr);
+        delete executable;
         currentThread->SortedInsertInWaitQueue(1000+stats->totalTicks);
     }
 }
@@ -357,6 +356,7 @@ ProcessAddressSpace::PageFaultHandler(unsigned vaddr)
 {
     unsigned vpn = vaddr/PageSize;
     unsigned ppn = GetPhysicalPage(vpn);
+    // printf("ppn:%d\n",ppn);
     KernelPageTable[vpn].virtualPage = vpn;
 	KernelPageTable[vpn].physicalPage = ppn;
 	KernelPageTable[vpn].valid = TRUE;

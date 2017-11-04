@@ -34,6 +34,7 @@ Statistics::Statistics()
     nonpreemptive_switch = 0;
 
     burstEstimateError = 0;
+    totalPageFaults = 0;
 }
 
 //----------------------------------------------------------------------
