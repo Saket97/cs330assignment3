@@ -34,7 +34,7 @@ LD = $(GCCDIR)ld
 #CPP = /lib/cpp
 CPP = /usr/bin/cpp
 #CPP = $(GCCDIR)cpp
-INCDIR =-I../userprog -I../threads
+INCDIR = -I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
 all: halt shell matmult sort printtest vectorsum testregPA forkjoin testexec testyield testloop forkjoin_hard testloop1 testloop2 testloop3 testlooplong testloop4 testloop5 vmtest1 vmtest2 shmtest shmtest1
