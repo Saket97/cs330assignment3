@@ -129,10 +129,15 @@ class Machine {
     
     bool ReadMem(int addr, int size, int* value);
     bool WriteMem(int addr, int size, int value);
+    bool sharedPages[NumPhysPages];
     				// Read or write 1, 2, or 4 bytes of virtual 
 				// memory (at addr).  Return FALSE if a 
 				// correct translation couldn't be found.
     
+    // Inverse Page table
+    int threadPID[NumPhysPages]; // PID of thread holding a page in memory
+    int threadVPN[NumPhysPages]; // Inverse Page Table mapping
+
     ExceptionType Translate(int virtAddr, int* physAddr, int size,bool writing);
     				// Translate an address, and check for 
 				// alignment.  Set the use and dirty bits in 

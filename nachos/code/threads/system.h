@@ -35,6 +35,13 @@
 #define DEFAULT_BASE_PRIORITY	50		// Default base priority (used by UNIX scheduler)
 #define GET_NICE_FROM_PARENT	-1
 
+// Page replacement algorithms
+#define NONE 0
+#define RANDOM 1
+#define FIFO 2
+#define LRU 3
+#define LRU_CLOCK 4
+
 // Initialization and cleanup routines
 extern void Initialize(int argc, char **argv); 	// Initialization,
 						// called before anything else
@@ -48,6 +55,7 @@ extern Interrupt *interrupt;			// interrupt status
 extern Statistics *stats;			// performance metrics
 extern Timer *timer;				// the hardware alarm clock
 extern unsigned numPagesAllocated;		// number of physical frames allocated
+extern int replAlgo;
 
 extern NachOSThread *threadArray[];  // Array of thread pointers
 extern unsigned thread_index;                  // Index into this array (also used to assign unique pid)

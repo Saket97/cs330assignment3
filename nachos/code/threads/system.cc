@@ -31,6 +31,7 @@ TimeSortedWaitQueue *sleepQueueHead;	// Needed to implement syscall_wrapper_Slee
 int schedulingAlgo;			// Scheduling algorithm to simulate
 char **batchProcesses;			// Names of batch processes
 int *priority;				// Process priority
+int replAlgo = 0;
 
 int cpu_burst_start_time;        // Records the start of current CPU burst
 int completionTimeArray[MAX_THREAD_COUNT];        // Records the completion time of all simulated threads
