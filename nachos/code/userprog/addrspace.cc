@@ -94,16 +94,20 @@ ProcessAddressSpace::ProcessAddressSpace(OpenFile *executable, char* f)
 // first, set up the translation 
     KernelPageTable = new TranslationEntry[numVirtualPages];
     for (i = 0; i < numVirtualPages; i++) {
-	KernelPageTable[i].virtualPage = i;
-	KernelPageTable[i].physicalPage = i+numPagesAllocated;
-	KernelPageTable[i].valid = FALSE;
-	KernelPageTable[i].use = FALSE;
-	KernelPageTable[i].dirty = FALSE;
-	KernelPageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
+	    LRU_clock_node temp;
+	    temp.vpn = i; temp.refer_bit = 0;
+	    LRU_clock_list->Append((void *)(&temp));
+	    KernelPageTable[i].virtualPage = i;
+	    KernelPageTable[i].physicalPage = i+numPagesAllocated;
+	    KernelPageTable[i].valid = FALSE;
+	    KernelPageTable[i].use = FALSE;
+	    KernelPageTable[i].dirty = FALSE;
+	    KernelPageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
 					// a separate page, we could set its 
 					// pages to be read-only
-    KernelPageTable[i].shared = FALSE;
+      KernelPageTable[i].shared = FALSE;
     }
+    LRU_clock_list->last->next = LRU_clock_list->first;
 // zero out the entire address space, to zero the unitialized data segment 
 // and the stack segment
     bzero(&machine->mainMemory[numPagesAllocated*PageSize], size);
@@ -320,6 +324,24 @@ ProcessAddressSpace::sharedMemory(int numSharedPages)
     }
     numPagesAllocated += numSharedPages;
     KernelPageTable = KernelPageTable1;
+    List *temp = LRU_clock_list->first;
+        while(true){
+          LRU_clock_node * itemptr = (LRU_clock_node *)(temp->item);
+          if(KernelPageTable[itemptr->vpn].shared == TRUE){
+            temp->prev->next = temp->next;
+            temp->next->prev = temp->prev;
+            if(LRU_clock_list->first == temp)
+              LRU_clock_list->first = temp->next;
+            if(LRU_clock_list->last == temp)
+              LRU_clock_list->last == temp->prev;
+            delete temp;
+            if(LRU_clock_list->first == LRU_clock_list->last)
+              LRU_clock_list->SortedRemove(NULL);
+          }
+          temp = temp->next;
+          if(LRU_clock_list->first == temp)
+            break;
+        }
     unsigned virtualAddressStarting = numVirtualPages*PageSize;
     numVirtualPages += numSharedPages;
     printf("numSharedPages: %d\n", numSharedPages);
@@ -333,8 +355,35 @@ unsigned
 ProcessAddressSpace::GetPhysicalPage(unsigned vpn)
 {
     // Assuming that we have to allocate a new page everytime the page is accessed. Change this suitably for different replacement algorithms
-    numPagesAllocated += 1;
-    return numPagesAllocated-1;
+    RANDOM=0;
+    FIFO=1;
+    LRU=2;
+    LRU_CLOCK=3;
+    if(!REPLACEMENT_NEEDED){}
+    else {
+      if(flag == RANDOM){}
+      else if (flag == FIFO){}
+      else if (flag == LRU){}
+      else if (flag == LRU_CLOCK){
+        List *temp = LRU_clock_list->first;
+        while(true){
+          LRU_clock_node * itemptr = (LRU_clock_node *)(temp->item);
+          if(itemptr->refer_bit == 1){
+            itemptr->refer_bit == 0;
+            LRU_clock_list->first = temp->next;
+          }
+          else{
+            temp->prev->next = temp->next;
+            temp->next->prev = temp->prev;
+            delete temp;
+            if(LRU_clock_list->first == LRU_clock_list->last)
+              LRU_clock_list->SortedRemove(NULL);
+            return itemptr->vpn;
+          }
+          temp = temp->next;
+        }
+      }
+    }
 }
 
 void

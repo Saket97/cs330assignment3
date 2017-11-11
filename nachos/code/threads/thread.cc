@@ -44,7 +44,7 @@ NachOSThread::NachOSThread(char* threadName, int nice)
     space = NULL;
     stateRestored = true;
 #endif
-
+    LRU_clock_list = new List();
     threadArray[thread_index] = this;
     pid = thread_index;
     thread_index++;

@@ -57,7 +57,10 @@
 // WATCH OUT IF THIS ISN'T BIG ENOUGH!!!!!
 #define StackSize	(4 * 1024)	// in words
 
-
+struct LRU_node{
+  int vpn;
+  int refer_bit;
+}LRU_clock_node;
 // NachOSThread state
 enum ThreadStatus { JUST_CREATED, RUNNING, READY, BLOCKED };
 
@@ -109,9 +112,10 @@ class NachOSThread {
 						// overflowed its stack
     void setStatus(ThreadStatus st) { status = st; }
     ThreadStatus getStatus (void) { return status; }
+    List* LRU_clock_list;
     char* getName() { return (name); }
     void Print() { printf("%s, ", name); }
-
+    
     inline int GetPID (void) { return pid; }
     inline int GetPPID (void) { return ppid; }
 
