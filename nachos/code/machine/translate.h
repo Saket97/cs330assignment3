@@ -40,7 +40,9 @@ class TranslationEntry {
 			// page is referenced or modified.
     bool dirty;         // This bit is set by the hardware every time the
 			// page is modified.
-      bool shared; // check whether the page is 
+    bool shared; // check whether the page is shared
+    bool loadFromSwap; // check whether the page should be loaded from swap memory
+
 };
 
 #endif

@@ -17,6 +17,7 @@ static char* exceptionNames[] = { "no exception", "syscall",
 				"page fault/no TLB entry", "page read only",
 				"bus error", "address error", "overflow",
 				"illegal instruction" };
+extern bool sharedPages[NumPhysPages];
 
 //----------------------------------------------------------------------
 // CheckEndian
@@ -61,6 +62,8 @@ Machine::Machine(bool debug)
     mainMemory = new char[MemorySize];
     for (i = 0; i < MemorySize; i++)
       	mainMemory[i] = 0;
+    for (i = 0; i < NumPhysPages; i++)
+        sharedPages[i] = FALSE;
 
 #ifdef USE_TLB
     tlb = new TranslationEntry[TLBSize];
@@ -84,6 +87,7 @@ Machine::Machine(bool debug)
 Machine::~Machine()
 {
     delete [] mainMemory;
+    //delete [] sharedPages;
     if (tlb != NULL)
         delete [] tlb;
 }

@@ -116,6 +116,9 @@ main(int argc, char **argv)
             currentThread->SetBasePriority(schedPriority+DEFAULT_BASE_PRIORITY);
             currentThread->SetPriority(schedPriority+DEFAULT_BASE_PRIORITY);
             currentThread->SetUsage(0);
+        } else if(!(strcmp(*argv, "-R"))){
+            replAlgo = atoi(*(argv+1));
+            ASSERT((replAlgo>=0) && (replAlgo<=4));
         } else if (!strcmp(*argv, "-x")) {        	// run a user program
 	    ASSERT(argc > 1);
             LaunchUserProcess(*(argv + 1));

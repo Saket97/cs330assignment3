@@ -40,11 +40,14 @@ class ProcessAddressSpace {
     TranslationEntry* GetPageTable();
     unsigned sharedMemory(int numSharedPages);
     void PageFaultHandler(unsigned vaddr);
-    unsigned GetPhysicalPage(unsigned vpn);
+    unsigned GetPhysicalPage(unsigned vpn, int pageToIgnore);
     void CopyPageData(unsigned vpn, bool useNoffH);
+    unsigned RandReplacement(unsigned vpn, int pageToIgnore);
+    void Backup(int vpn);
     NoffHeader noffH;
     char* filename;
-  private:
+
+    char *backupArray;
     TranslationEntry *KernelPageTable;	// Assume linear page table translation
 					// for now!
     unsigned int numVirtualPages;		// Number of pages in the virtual 
