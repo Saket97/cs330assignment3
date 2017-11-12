@@ -166,6 +166,8 @@ ProcessAddressSpace::ProcessAddressSpace(ProcessAddressSpace *parentSpace)
     int pagesAssigned = 0;
 
     for (i = 0; i < numVirtualPages; i++) {
+        int temp = i;
+        LRU_list->Append(*temp);
         KernelPageTable[i].virtualPage = i;
         if (parentPageTable[i].shared) {
             KernelPageTable[i].physicalPage = parentPageTable[i].physicalPage;    
@@ -319,6 +321,20 @@ ProcessAddressSpace::sharedMemory(int numSharedPages)
         stats->totalPageFaults++;
     }
     numPagesAllocated += numSharedPages;
+    List* LRU_temp = LRU_list->first;
+    List* LRU_temp_2;
+    while(LRU_temp != NULL){
+        i = LRU_temp->item;     
+        if(KernelPageTable[i].shared == TRUE){
+            if(LRU_list->first == LRU_temp)LRU_list->first = LRU_temp->next;
+            LRU_temp->prev->next = LRU_temp->next;
+            LRU_temp->next->prev = LRU_temp->prev;
+            LRU_temp_2 = LRU_temp;
+            LRU_temp = LRU_temp->next;
+            delete LRU_temp_2; 
+        }
+    }
+
     KernelPageTable = KernelPageTable1;
     unsigned virtualAddressStarting = numVirtualPages*PageSize;
     numVirtualPages += numSharedPages;
@@ -330,11 +346,23 @@ ProcessAddressSpace::sharedMemory(int numSharedPages)
 }
 
 unsigned
-ProcessAddressSpace::GetPhysicalPage(unsigned vpn)
+ProcessAddressSpace::GetPhysicalPage(unsigned vpn, int flag)
 {
     // Assuming that we have to allocate a new page everytime the page is accessed. Change this suitably for different replacement algorithms
-    numPagesAllocated += 1;
-    return numPagesAllocated-1;
+    int RANDOM = 1;
+    int FIFO = 2;
+    int LRU = 3;
+    int LRU_CLOCK = 4;
+    if(flag == RANDOM){
+
+    }else if(flag == FIFO){
+
+    }else if(flag == LRU){
+        return currentThread->LRU_list->last->item;
+    }else if(flag == LRU_CLOCK){
+
+    }
+
 }
 
 void
@@ -352,10 +380,10 @@ ProcessAddressSpace::CopyPageData(unsigned vpn, bool useNoffH)
 }
 
 void
-ProcessAddressSpace::PageFaultHandler(unsigned vaddr)
+ProcessAddressSpace::PageFaultHandler(unsigned vaddr, int flag)
 {
     unsigned vpn = vaddr/PageSize;
-    unsigned ppn = GetPhysicalPage(vpn);
+    unsigned ppn = GetPhysicalPage(vpn, flag);
     // printf("ppn:%d\n",ppn);
     KernelPageTable[vpn].virtualPage = vpn;
 	KernelPageTable[vpn].physicalPage = ppn;

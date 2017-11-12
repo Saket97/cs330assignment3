@@ -152,6 +152,8 @@ class NachOSThread {
     void SetUsage (int usage);
     int GetUsage (void);
 
+    List *LRU_list; 
+
   private:
     // some of the private data for this class is listed above
     
