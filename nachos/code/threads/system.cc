@@ -8,6 +8,11 @@
 #include "copyright.h"
 #include "system.h"
 
+struct LRU_node{
+  int ppn;
+  int refer_bit;
+}LRU_node;
+
 // This defines *all* of the global data structures used by Nachos.
 // These are all initialized and de-allocated by this file.
 
@@ -28,7 +33,9 @@ bool exitThreadArray[MAX_THREAD_COUNT];  //Marks exited threads
 int pagesAllocated;
 
 TimeSortedWaitQueue *sleepQueueHead;	// Needed to implement syscall_wrapper_Sleep
-
+List *FIFO_list= new List;
+List *LRU_list = new List;
+List *LRU_clock_list = new List;
 int schedulingAlgo;			// Scheduling algorithm to simulate
 char **batchProcesses;			// Names of batch processes
 int *priority;				// Process priority

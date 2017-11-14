@@ -97,17 +97,25 @@ ProcessAddressSpace::ProcessAddressSpace(OpenFile *executable, char* f)
     KernelPageTable = new TranslationEntry[numVirtualPages];
     bzero(backupArray, size);
     for (i = 0; i < numVirtualPages; i++) {
-	KernelPageTable[i].virtualPage = i;
-    KernelPageTable[i].physicalPage = -1;
-	KernelPageTable[i].valid = FALSE;
-	KernelPageTable[i].use = FALSE;
-	KernelPageTable[i].dirty = FALSE;
-	KernelPageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
+  	  LRU_clock_node temp;
+	    temp.vpn = i; temp.refer_bit = 0;
+      LRU_clock_list->Append((void *)(&temp));
+      int i_temp = i;
+      LRU_list->Append(*i_temp);
+      FIFO_list->Append(*i_temp);
+  	  KernelPageTable[i].virtualPage = i;
+      KernelPageTable[i].physicalPage = -1;
+  	  KernelPageTable[i].valid = FALSE;
+    	KernelPageTable[i].use = FALSE;
+    	KernelPageTable[i].dirty = FALSE;
+    	KernelPageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
 					// a separate page, we could set its 
 					// pages to be read-only
-    KernelPageTable[i].shared = FALSE;
-    KernelPageTable[i].loadFromSwap = FALSE;
+        KernelPageTable[i].shared = FALSE;
+       KernelPageTable[i].loadFromSwap = FALSE;
     }
+    LRU_clock_list->last->next = LRU_clock_list->first;
+
 // zero out the entire address space, to zero the unitialized data segment 
 // and the stack segment
     //bzero(&machine->mainMemory[numPagesAllocated*PageSize], size);
@@ -356,11 +364,35 @@ ProcessAddressSpace::sharedMemory(int numSharedPages)
     KernelPageTable = KernelPageTable1;
     unsigned virtualAddressStarting = numVirtualPages*PageSize;
     numVirtualPages += numSharedPages;
+    if(replAlgo == 2)
+      ClearList(FIFO_list);
+    else if (replAlgo == 3)
+      ClearList(LRU_list);
+    else 
+      ClearList(LRU_clock_list);
+    
     printf("numSharedPages: %d\n", numSharedPages);
     printf("numVirtualPages %d\n", numVirtualPages);
     RestoreContextOnSwitch();
     delete parentPageTable;
     return virtualAddressStarting;
+}
+
+void
+ClearList(List *list){
+  List* LRU_temp = list->first;
+  List* LRU_temp2;
+  while(LRU_temp != NULL || (LRU_temp == )){
+    int i = LRU_temp->item;
+      if(KernelPageTable[i].shared == TRUE){
+             if(LRU_list->first == LRU_temp)LRU_list->first = LRU_temp->next;
+               LRU_temp->prev->next = LRU_temp->next;
+               LRU_temp->next->prev = LRU_temp->prev;
+               LRU_temp_2 = LRU_temp;
+               delete LRU_temp_2;
+          }
+      LRU_temp = LRU_temp->next;
+  }
 }
 
 unsigned
@@ -381,6 +413,47 @@ ProcessAddressSpace::GetPhysicalPage(unsigned vpn, int pageToIgnore)
                 }
             }
         }
+        else if(replAlgo == 2){
+            int *vpn = (int *)FIFO_list->first->item;
+            void *temp = FIFO_list->first;
+            FIFO_list->first =  FIFO_list->first->next;
+            delete temp;
+            return *vpn;
+        }
+        else if(replAlgo == 3){
+            int *vpn = (int *)LRU_list->last->item;
+            void *LRU_temp = LRU_list->last;
+            if(LRU_temp->prev != NULL){
+              LRU_temp->prev->next = NULL;
+              LRU_list->last = LRU_temp->prev;
+            } else {
+              LRU_list->first = NULL;
+              LRU_list->last= NULL;
+            }
+            delete LRU_temp;
+            return *vpn; 
+        }
+        else if(replAlgo ==4){
+           List *temp = LRU_clock_list->first;
+           while(true){
+            LRU_clock_node * itemptr = (LRU_clock_node *)(temp->item);
+            if(itemptr->refer_bit == 1){
+               itemptr->refer_bit == 0;
+               LRU_clock_list->first = temp->next;
+            }
+            else{
+                if(LRU_clock_list->first == LRU_clock_list->last)
+                  LRU_clock_list->SortedRemove(NULL);
+                else{
+                  temp->prev->next = temp->next;
+                  temp->next->prev = temp->prev;
+                  delete temp;
+                }
+                return itemptr->vpn;
+            }
+            temp = temp->next;
+         } 
+      }
     }
     else {
         if(!replAlgo){
