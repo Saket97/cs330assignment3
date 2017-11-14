@@ -485,7 +485,7 @@ ProcessAddressSpace::PageFaultHandler(unsigned vaddr)
 void
 ProcessAddressSpace::Backup(int vpn, int pid){
     ASSERT(KernelPageTable[vpn].valid == TRUE);
-    //ASSERT(!exitThreadArray[pid]);
+    ASSERT(!exitThreadArray[pid]);
 
     if(KernelPageTable[vpn].dirty){
         memcpy(&(backupArray[vpn*PageSize]), &(machine->mainMemory[KernelPageTable[vpn].physicalPage*PageSize]), PageSize);
