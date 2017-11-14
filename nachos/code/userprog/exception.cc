@@ -55,6 +55,7 @@ static void ReadAvail(int arg) { readAvail->V(); }
 static void WriteDone(int arg) { writeDone->V(); }
 
 extern void LaunchUserProcess (char*);
+extern void pt();
 
 void
 ForkStartFunction (int dummy)
@@ -214,6 +215,7 @@ ExceptionHandler(ExceptionType which)
     }
     else if ((which == SyscallException) && (type == SysCall_PrintString)) {
        vaddr = machine->ReadRegister(4);
+       printf("vaddr = %d\n", vaddr);
        while(!machine->ReadMem(vaddr, 1, &memval));
        while ((*(char*)&memval) != '\0') {
           writeDone->P() ;
@@ -318,6 +320,7 @@ ExceptionHandler(ExceptionType which)
         currentThread->space->PageFaultHandler(vaddr);
     }
      else {
+         pt();
 	printf("Unexpected user mode exception %d %d\n", which, type);
 	ASSERT(FALSE);
     }

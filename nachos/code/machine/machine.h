@@ -32,8 +32,8 @@
 					// the disk sector size, for
 					// simplicity
 
-//#define NumPhysPages    32
-#define NumPhysPages    1024
+#define NumPhysPages 2 
+//#define NumPhysPages    1024
 #define MemorySize 	(NumPhysPages * PageSize)
 #define TLBSize		4		// if there is a TLB, make it small
 
@@ -204,6 +204,8 @@ extern void ExceptionHandler(ExceptionType which);
 				// user system calls and exceptions
 				// Defined in exception.cc
 
+extern int pagesAllocated;
+extern void pt();
 
 // Routines for converting Words and Short Words to and from the
 // simulated machine's format of little endian.  If the host machine

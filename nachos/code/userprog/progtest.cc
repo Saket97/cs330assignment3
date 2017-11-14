@@ -40,8 +40,11 @@ LaunchUserProcess(char *filename)
     }
     space = new ProcessAddressSpace(executable, filename);  
     currentThread->space = space;
+    //printf("exec = %x\n", executable);
+    //printf("Oages = %d\n", space->GetNumPages());
+    //printf("%s\n", filename);
 
-    delete executable;			// close file
+    delete executable;			// close file 
 
     space->InitUserModeCPURegisters();		// set the initial register values
     space->RestoreContextOnSwitch();		// load page table register

@@ -231,6 +231,7 @@ NachOSThread::Exit (bool terminateSim, int exitcode)
     (void) interrupt->SetLevel(IntOff);
     ASSERT(this == currentThread);
 
+    printf("............................................................sldkjflskjf\n");
     DEBUG('t', "Finishing thread \"%s\"\n", getName());
 
     threadToBeDestroyed = currentThread;
@@ -281,6 +282,20 @@ NachOSThread::Exit (bool terminateSim, int exitcode)
        }
        else interrupt->Idle();      // no one to run, wait for an interrupt
        nextThread = scheduler->SelectNextReadyThread();
+    }
+    TranslationEntry *delPage = space->GetPageTable();
+    int numVirtualPages = space->GetNumPages();
+
+    int page;
+    for(int i = 0; i<numVirtualPages; i++){
+        if(!delPage[i].shared){
+            if(delPage[i].valid){
+                page = delPage[i].physicalPage;
+                machine->threadPID[page] = -1;
+                machine->threadVPN[page] = -1;
+                pagesAllocated--;
+            }
+        }
     }
     scheduler->ScheduleThread(nextThread); // returns when we've been signalled
 }

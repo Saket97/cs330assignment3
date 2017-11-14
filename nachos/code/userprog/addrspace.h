@@ -43,7 +43,7 @@ class ProcessAddressSpace {
     unsigned GetPhysicalPage(unsigned vpn, int pageToIgnore);
     void CopyPageData(unsigned vpn, bool useNoffH);
     unsigned RandReplacement(unsigned vpn, int pageToIgnore);
-    void Backup(int vpn);
+    void Backup(int vpn, int pid);
     NoffHeader noffH;
     char* filename;
 

@@ -18,6 +18,7 @@ static char* exceptionNames[] = { "no exception", "syscall",
 				"bus error", "address error", "overflow",
 				"illegal instruction" };
 extern bool sharedPages[NumPhysPages];
+extern void pt();
 
 //----------------------------------------------------------------------
 // CheckEndian
@@ -64,6 +65,11 @@ Machine::Machine(bool debug)
       	mainMemory[i] = 0;
     for (i = 0; i < NumPhysPages; i++)
         sharedPages[i] = FALSE;
+    //printf("mem size = %d\n", MemorySize);
+    for(i = 0; i<NumPhysPages; i++){
+        threadPID[i] = -1;
+        threadVPN[i] = -1;
+    }
 
 #ifdef USE_TLB
     tlb = new TranslationEntry[TLBSize];
@@ -217,3 +223,9 @@ void Machine::WriteRegister(int num, int value)
 	registers[num] = value;
     }
 
+void pt(){
+    printf("mem dump\n");
+    for(int i = 0; i<NumPhysPages; i++){
+        printf("ppn=%d, pid=%d, vpn=%d\n", i, machine->threadPID[i], machine->threadVPN[i]);
+    }
+}

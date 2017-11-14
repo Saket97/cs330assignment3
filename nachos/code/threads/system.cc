@@ -25,6 +25,7 @@ NachOSThread *threadArray[MAX_THREAD_COUNT];  // Array of thread pointers
 unsigned thread_index;			// Index into this array (also used to assign unique pid)
 bool initializedConsoleSemaphores;
 bool exitThreadArray[MAX_THREAD_COUNT];  //Marks exited threads
+int pagesAllocated;
 
 TimeSortedWaitQueue *sleepQueueHead;	// Needed to implement syscall_wrapper_Sleep
 
@@ -201,6 +202,8 @@ Initialize(int argc, char **argv)
     currentThread->setStatus(RUNNING);
     stats->start_time = stats->totalTicks;
     cpu_burst_start_time = stats->totalTicks;
+    replAlgo = 0;
+    pagesAllocated = 0;
 
     interrupt->Enable();
     CallOnUserAbort(Cleanup);			// if user hits ctl-C
