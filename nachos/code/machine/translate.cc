@@ -94,6 +94,7 @@ Machine::ReadMem(int addr, int size, int *value)
     DEBUG('a', "Reading VA 0x%x, size %d\n", addr, size);
     
     exception = Translate(addr, &physicalAddress, size, FALSE);
+    printf("Exception = %d\n", exception);
     if (exception != NoException) {
 	machine->RaiseException(exception, addr);
 	return FALSE;
@@ -201,12 +202,14 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
     
     // we must have either a TLB or a page table, but not both!
     ASSERT(tlb == NULL || KernelPageTable == NULL);	
-    ASSERT(tlb != NULL || KernelPageTable != NULL);	
+    ASSERT(tlb != NULL || KernelPageTable != NULL);	// TODO: Uncomment
 
 // calculate the virtual page number, and offset within the page,
 // from the virtual address
     vpn = (unsigned) virtAddr / PageSize;
     offset = (unsigned) virtAddr % PageSize;
+
+    printf("Vaddr = %d, vpn = %d, PageSize = %d\n", virtAddr, vpn, PageSize);
     
     if (tlb == NULL) {		// => page table => vpn is index into table
 	if (vpn >= KernelPageTableSize) {
@@ -243,8 +246,10 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
     // An invalid translation was loaded into the page table or TLB. 
     if (pageFrame >= NumPhysPages) { 
 	DEBUG('a', "*** frame %d > %d!\n", pageFrame, NumPhysPages);
+    printf("Frame = %d, max frame = %d\n", pageFrame, NumPhysPages);
 	return BusErrorException;
     }
+    printf("Frame = %d\n", pageFrame);
     entry->use = TRUE;		// set the use, dirty bits
     if (writing)
 	entry->dirty = TRUE;
