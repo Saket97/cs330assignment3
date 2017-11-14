@@ -443,7 +443,6 @@ ProcessAddressSpace::CopyPageData(unsigned vpn, bool useNoffH)
         executable->ReadAt(&(machine->mainMemory[ppn * PageSize]), PageSize, noffH.code.inFileAddr + startCopyAddr - noffH.code.virtualAddr);
         delete executable;
         KernelPageTable[vpn].dirty = TRUE;
-        printf("#################################################Copying from file\n");
         memcpy(&(backupArray[vpn*PageSize]), &(machine->mainMemory[ppn*PageSize]), PageSize);
         KernelPageTable[vpn].loadFromSwap = TRUE;
         currentThread->SortedInsertInWaitQueue(1000+stats->totalTicks);
@@ -452,8 +451,6 @@ ProcessAddressSpace::CopyPageData(unsigned vpn, bool useNoffH)
         ASSERT(KernelPageTable[vpn].loadFromSwap == TRUE);
 
         //memcpy(&(machine->mainMemory[KernelPageTable[vpn].physicalPage * PageSize]), &(backupArray[vpn*PageSize]), PageSize); // Load data from backup
-        printf("################################################Copying from mem\n");
-        printf("################################################ vpn trying to copy from is %d\n", vpn);
         for(int i = 0; i<PageSize; i++){
             machine->mainMemory[KernelPageTable[vpn].physicalPage*PageSize + i] = backupArray[vpn*PageSize + i];
         }
@@ -491,12 +488,7 @@ ProcessAddressSpace::Backup(int vpn, int pid){
     //ASSERT(!exitThreadArray[pid]);
 
     if(KernelPageTable[vpn].dirty){
-        printf("----------------------vpn load is %d\n", vpn);
         memcpy(&(backupArray[vpn*PageSize]), &(machine->mainMemory[KernelPageTable[vpn].physicalPage*PageSize]), PageSize);
-        for(int i = 0; i<PageSize; i++){
-            if(backupArray[vpn*PageSize+i]!=machine->mainMemory[KernelPageTable[vpn].physicalPage+i])
-                printf("=============cocks========\n");
-        }
         KernelPageTable[vpn].dirty = FALSE;
     }
     KernelPageTable[vpn].loadFromSwap = TRUE;
