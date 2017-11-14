@@ -16,7 +16,7 @@
 #include "copyright.h"
 #include "filesys.h"
 #include "noff.h"
-
+#include "list.h" 
 #define UserStackSize		1024 	// increase this as necessary!
 
 class ProcessAddressSpace {
@@ -28,7 +28,8 @@ class ProcessAddressSpace {
     ProcessAddressSpace (ProcessAddressSpace *parentSpace);	// Used by fork
 
     ~ProcessAddressSpace();			// De-allocate an address space
-
+    void ClearList(List *list);
+    void ClearListClock(List *list);
     void InitUserModeCPURegisters();		// Initialize user-level CPU registers,
 					// before jumping to user code
 
@@ -43,7 +44,7 @@ class ProcessAddressSpace {
     unsigned GetPhysicalPage(unsigned vpn, int pageToIgnore);
     void CopyPageData(unsigned vpn, bool useNoffH);
     unsigned RandReplacement(unsigned vpn, int pageToIgnore);
-    void Backup(int vpn, int pid);
+    void Backup(int vpn);
     NoffHeader noffH;
     char* filename;
 

@@ -56,7 +56,13 @@ extern Statistics *stats;			// performance metrics
 extern Timer *timer;				// the hardware alarm clock
 extern unsigned numPagesAllocated;		// number of physical frames allocated
 extern int replAlgo;
-
+struct LRU_clock_node{                                                                              
+    int vpn;
+    int refer_bit;
+  };
+extern List *FIFO_list;
+extern List *LRU_list;
+extern List *LRU_clock_list;
 extern NachOSThread *threadArray[];  // Array of thread pointers
 extern unsigned thread_index;                  // Index into this array (also used to assign unique pid)
 extern bool initializedConsoleSemaphores;	// Used to initialize the semaphores for console I/O exactly once

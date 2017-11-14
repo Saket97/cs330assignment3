@@ -27,7 +27,7 @@
 class ListElement {
    public:
      ListElement(void *itemPtr, int sortKey);	// initialize a list element
-
+     ListElement *prev;
      ListElement *next;		// next element on list, 
 				// NULL if this is the last
      int key;		    	// priority, for a sorted list
@@ -59,8 +59,6 @@ class List {
     void *SortedRemove(int *keyPtr); 	  	// Remove first item from list
 
     void *GetMinPriorityThread (void);
-
-  private:
     ListElement *first;  	// Head of the list, NULL if list is empty
     ListElement *last;		// Last element of list
 };

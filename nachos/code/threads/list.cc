@@ -32,6 +32,7 @@ ListElement::ListElement(void *itemPtr, int sortKey)
 {
      item = itemPtr;
      key = sortKey;
+     prev = NULL;
      next = NULL;	// assume we'll put it at the end of the list 
 }
 
@@ -84,7 +85,9 @@ List::Append(void *item)
 	last = element;
     } else {			// else put it after last
 	last->next = element;
+	element->prev = last;
 	last = element;
+
     }
 }
 
@@ -110,6 +113,7 @@ List::Prepend(void *item)
 	last = element;
     } else {			// else put it before first
 	element->next = first;
+	first->prev = element;
 	first = element;
     }
 }
@@ -188,16 +192,20 @@ List::SortedInsert(void *item, int sortKey)
     } else if (sortKey < first->key) {	
 		// item goes on front of list
 	element->next = first;
+	first->prev = element;
 	first = element;
     } else {		// look for first elt in list bigger than item
         for (ptr = first; ptr->next != NULL; ptr = ptr->next) {
             if (sortKey < ptr->next->key) {
 		element->next = ptr->next;
+		      ptr->next->prev = element;
 	        ptr->next = element;
-		return;
+		      element->prev = ptr;
+		      return;
 	    }
 	}
 	last->next = element;		// item goes at end of list
+	element->prev = last;
 	last = element;
     }
 }
@@ -229,6 +237,7 @@ List::SortedRemove(int *keyPtr)
         first = NULL;
 	last = NULL;
     } else {
+        element->next->prev = element->prev;
         first = element->next;
     }
     if (keyPtr != NULL)
