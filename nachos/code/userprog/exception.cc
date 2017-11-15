@@ -316,6 +316,7 @@ ExceptionHandler(ExceptionType which)
        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
     } else if (which == PageFaultException) {
         stats->totalPageFaults += 1;
+        printf("shit happened");
         unsigned vaddr = machine->ReadRegister(BadVAddrReg);
         currentThread->space->PageFaultHandler(vaddr);
     }
