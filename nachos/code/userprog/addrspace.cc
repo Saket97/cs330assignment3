@@ -101,13 +101,7 @@ ProcessAddressSpace::ProcessAddressSpace(OpenFile *executable, char* f, int pd)
     KernelPageTable = new TranslationEntry[numVirtualPages];
     bzero(backupArray, size);
     for (i = 0; i < numVirtualPages; i++) {
-  	  LRU_clock_node temp;
- 	    temp.vpn = i; temp.refer_bit = 0;
-       LRU_clock_list->Append((void *)(&temp));
-       int i_temp = i;
-       LRU_list->Append(*i_temp);
-       FIFO_list->Append(*i_temp);
-    KernelPageTable[i].virtualPage = i;
+   KernelPageTable[i].virtualPage = i;
     KernelPageTable[i].physicalPage = -1;
 	KernelPageTable[i].valid = FALSE;
 	KernelPageTable[i].use = FALSE;
@@ -118,7 +112,6 @@ ProcessAddressSpace::ProcessAddressSpace(OpenFile *executable, char* f, int pd)
     KernelPageTable[i].shared = FALSE;
     KernelPageTable[i].loadFromSwap = FALSE;
     }
-    LRU_clock_list->last->next = LRU_clock_list->first;
 // zero out the entire address space, to zero the unitialized data segment 
 // and the stack segment
     //bzero(&machine->mainMemory[numPagesAllocated*PageSize], size);
@@ -380,81 +373,15 @@ ProcessAddressSpace::sharedMemory(int numSharedPages)
     KernelPageTable = KernelPageTable1;
     unsigned virtualAddressStarting = numVirtualPages*PageSize;
     numVirtualPages += numSharedPages;
-    if(replAlgo == 2)
-       ClearList(FIFO_list);
-     else if (replAlgo == 3)
-       ClearList(LRU_list);
-     else
-       ClearList(LRU_clock_list);
-    printf("numSharedPages: %d\n", numSharedPages);
-    printf("numVirtualPages %d\n", numVirtualPages);
-    RestoreContextOnSwitch();
+   RestoreContextOnSwitch();
     delete parentPageTable;
     return virtualAddressStarting;
 }
-void
-ClearList(List *list){
-   List* LRU_temp = list->first;
-   List* LRU_temp2;
-   while(LRU_temp != NULL || (LRU_temp == )){
-     int i = LRU_temp->item;
-       if(KernelPageTable[i].shared == TRUE){
-              if(LRU_list->first == LRU_temp)LRU_list->first = LRU_temp->next;
-                LRU_temp->prev->next = LRU_temp->next;
-                LRU_temp->next->prev = LRU_temp->prev;
-                LRU_temp_2 = LRU_temp;
-                delete LRU_temp_2;
-           }
-       LRU_temp = LRU_temp->next;
-   }
- }
- 
 unsigned
 ProcessAddressSpace::GetPhysicalPage(unsigned vpn, int pageToIgnore)
 {
-    // Assuming that we have to allocate a new page everytime the page is accessed. Change this suitably for different replacement algorithms
-    /*if(pagesAllocated == NumPhysPages){
-        if(replAlgo == 1){ // Random replacement
-            printf("randrepl\n");
-            //return RandReplacement(vpn, pageToIgnore);
-            for(int i = 0; i<NumPhysPages; i++){
-                if(i != pageToIgnore && machine->sharedPages[i] == FALSE){
-                    threadArray[machine->threadPID[i]]->space->Backup(machine->threadVPN[i]); // Save exiting page to backup
-                    machine->threadPID[i] = currentThread->GetPID();
-                    machine->threadVPN[i] = vpn;
-                    pagesAllocated++;
-                    return i;
-                }
-            }
-        }
-    }
-    else {
-        if(!replAlgo){
-            numPagesAllocated += 1;
-            ASSERT(numPagesAllocated <= NumPhysPages);
-            pagesAllocated++;
-            return numPagesAllocated-1;
-        }
-        else{
-            int j = 0;
-            if(KernelPageTable[vpn].valid == FALSE){
-                for(int i = 0; i<NumPhysPages; i++){
-                if(machine->threadPID[i] == -1 && machine->threadVPN[i] == -1){
-                    machine->threadPID[i] = currentThread->GetPID();
-                    machine->threadVPN[i] = vpn;
-                    j = i;
-                    break;
-                    }
-                }
-            //printf("Returning page = %d\n", j);
-                pagesAllocated++;
-                return j;
-
-            }
-        }
-
-    }*/
-    if(replAlgo == 0){
+      if(replAlgo == 0){
+        printf("num alloc = %d\n", numPagesAllocated);
         ASSERT(numPagesAllocated < NumPhysPages);
         numPagesAllocated++;
         return numPagesAllocated-1;
@@ -467,6 +394,12 @@ ProcessAddressSpace::GetPhysicalPage(unsigned vpn, int pageToIgnore)
             machine->threadPID[i] = this->cpid;
             //thPID[i] = this->cpid;
             machine->threadVPN[i] = vpn;
+            machine->referenceBit[i] = 1;
+            if (replAlgo == 2) {
+                        int *tmp = new int;
+                        *tmp = i;
+                        FIFOQueue->Append((void *)tmp);
+                    }
             //thVPN[i] = vpn;
             pagesAllocated++;
             numPagesAllocated++;
@@ -479,45 +412,13 @@ ProcessAddressSpace::GetPhysicalPage(unsigned vpn, int pageToIgnore)
         return RandReplacement(vpn, pageToIgnore);
     }
     else if(replAlgo == 2){
-             int *vpn = (int *)FIFO_list->first->item;
-             void *temp = FIFO_list->first;
-             FIFO_list->first =  FIFO_list->first->next;
-             delete temp;
-             return *vpn;
+           return FIFO_repl(vpn, pageToIgnore); 
          }
     else if(replAlgo == 3){
-             int *vpn = (int *)LRU_list->last->item;
-             void *LRU_temp = LRU_list->last;
-             if(LRU_temp->prev != NULL){
-               LRU_temp->prev->next = NULL;
-               LRU_list->last = LRU_temp->prev;
-             } else {
-               LRU_list->first = NULL;
-               LRU_list->last= NULL;
-             }
-             delete LRU_temp;
-             return *vpn; 
+            return LRU_repl(vpn, pageToIgnore);
          }
     else if(replAlgo ==4){
-            List *temp = LRU_clock_list->first;
-            while(true){
-             LRU_clock_node * itemptr = (LRU_clock_node *)(temp->item);
-             if(itemptr->refer_bit == 1){
-                itemptr->refer_bit == 0;
-                LRU_clock_list->first = temp->next;
-             }
-             else{
-                 if(LRU_clock_list->first == LRU_clock_list->last)
-                   LRU_clock_list->SortedRemove(NULL);
-                 else{
-                   temp->prev->next = temp->next;
-                   temp->next->prev = temp->prev;
-                   delete temp;
-                 }
-                 return itemptr->vpn;
-             }
-             temp = temp->next;
-          } 
+          return LRU_Clock(vpn, pageToIgnore); 
        }
 }
 
@@ -535,6 +436,7 @@ ProcessAddressSpace::CopyPageData(unsigned vpn, bool useNoffH)
         memcpy(&(backupArray[vpn*PageSize]), &(machine->mainMemory[ppn*PageSize]), PageSize);
         KernelPageTable[vpn].loadFromSwap = TRUE;
         currentThread->SortedInsertInWaitQueue(1000+stats->totalTicks);
+        stats->totalPageFaults++;
     }
     else {
         ASSERT(KernelPageTable[vpn].loadFromSwap == TRUE);
@@ -576,7 +478,6 @@ ProcessAddressSpace::PageFaultHandler(unsigned vaddr)
 void
 ProcessAddressSpace::Backup(int vpn, int pd){
     //ASSERT(!exitThreadArray[pd]);
-    printf("fuck me\n");
     ASSERT(this->KernelPageTable[vpn].valid == TRUE);
 
     if(this->KernelPageTable[vpn].dirty){
@@ -619,4 +520,90 @@ ProcessAddressSpace::RandReplacement(unsigned vpn, int pageToIgnore){
     //thVPN[new_ppn] = vpn;
     
     return new_ppn;
+}
+
+unsigned 
+ProcessAddressSpace::FIFO_repl(int vpn, int pageToIgnore){
+    int *tmp2=NULL,*tmp;
+    int foundPage=-1;
+    //printf("temp\n");
+    tmp = (int *)FIFOQueue->Remove();
+    foundPage = *tmp;
+    while(machine->sharedPages[foundPage] == TRUE || foundPage == pageToIgnore){
+      if (foundPage == pageToIgnore) {
+                        tmp2 = tmp;
+                        tmp = (int *)FIFOQueue->Remove();
+                        foundPage = *tmp;
+                    }
+                    if(machine->sharedPages[foundPage]) {
+                        delete tmp;
+                        tmp = (int *)FIFOQueue->Remove();
+                        foundPage = *tmp;
+                    }
+    }
+    if(tmp2)
+      FIFOQueue->Prepend((void *)tmp2);
+    FIFOQueue->Append((void *)tmp);
+    int pid = machine->threadPID[foundPage]; // Part of inverse table
+    if(threadArray[pid]->space != NULL)
+        threadArray[pid]->space->Backup(machine->threadVPN[foundPage], pid); // Save exiting page to backup
+    else{
+        this->Backup(machine->threadVPN[foundPage], pid);
+    }
+    machine->threadPID[foundPage] = cpid;
+    machine->threadVPN[foundPage] = vpn;
+    return foundPage; 
+}
+
+unsigned 
+ProcessAddressSpace::LRU_repl(int vpn, int notToReplace){
+     int foundPage=-1;
+     long long int val = (1LL)<<60 -1;
+
+      if(notToReplace!= -1) {
+                    machine->LRUTimeStamp[notToReplace] = stats->totalTicks-1;
+                }
+
+                for(int i = 0; i<NumPhysPages; i++){
+                    if( machine->LRUTimeStamp[i] < val  && machine->sharedPages[i] == FALSE  && i != notToReplace ){
+                        foundPage = i;
+                        val = machine->LRUTimeStamp[i];
+                    }
+                }
+                ASSERT(foundPage != -1);
+                machine->LRUTimeStamp[foundPage] = stats->totalTicks;
+     int pid = machine->threadPID[foundPage]; // Part of inverse table
+     if(threadArray[pid]->space != NULL)
+         threadArray[pid]->space->Backup(machine->threadVPN[foundPage]    , pid); // Save exiting page to backup
+     else{
+         this->Backup(machine->threadVPN[foundPage], pid);
+     }
+     machine->threadPID[foundPage] = cpid;
+     machine->threadVPN[foundPage] = vpn;
+     return foundPage;
+}
+
+unsigned
+ProcessAddressSpace::LRU_Clock(int vpn, int notToReplace){
+  int foundPage=-1;          
+  // printf("Entering clock lru replacement algorithm\n");
+                while(machine->referenceBit[LRU_Clock_ptr] ||
+                      machine->sharedPages[LRU_Clock_ptr] ||
+                      LRU_Clock_ptr == notToReplace) {
+                    machine->referenceBit[LRU_Clock_ptr] = 0;
+                    LRU_Clock_ptr = (LRU_Clock_ptr+1)%NumPhysPages;
+                }
+
+                foundPage = LRU_Clock_ptr;
+                machine->referenceBit[foundPage]=TRUE;
+                LRU_Clock_ptr = (LRU_Clock_ptr+1)%NumPhysPages;
+                int pid = machine->threadPID[foundPage]; // Part of inverse table
+     if(threadArray[pid]->space != NULL)
+         threadArray[pid]->space->Backup(machine->threadVPN[foundPage]    , pid); // Save exiting page to backup
+     else{
+         this->Backup(machine->threadVPN[foundPage], pid);
+     }
+     machine->threadPID[foundPage] = cpid;
+     machine->threadVPN[foundPage] = vpn;
+     return foundPage;
 }

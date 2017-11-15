@@ -16,7 +16,7 @@
 #include "copyright.h"
 #include "filesys.h"
 #include "noff.h"
-
+#include "list.h" 
 #define UserStackSize		1024 	// increase this as necessary!
 
 class ProcessAddressSpace {
@@ -34,9 +34,10 @@ class ProcessAddressSpace {
 
     void SaveContextOnSwitch();			// Save/restore address space-specific
     void RestoreContextOnSwitch();		// info on a context switch
-
+    unsigned FIFO_repl(int vpn, int pageToIgnore);
+    unsigned LRU_repl(int vpn, int pageToIgnore);
+    unsigned LRU_Clock(int vpn, int pageToIgnore);
     unsigned GetNumPages();
-
     TranslationEntry* GetPageTable();
     unsigned sharedMemory(int numSharedPages);
     void PageFaultHandler(unsigned vaddr);

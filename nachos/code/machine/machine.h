@@ -32,7 +32,7 @@
 					// the disk sector size, for
 					// simplicity
 
-#define NumPhysPages 4
+#define NumPhysPages 2
 //#define NumPhysPages    1024
 #define MemorySize 	(NumPhysPages * PageSize)
 #define TLBSize		4		// if there is a TLB, make it small
@@ -157,7 +157,7 @@ class Machine {
 
     void Debugger();		// invoke the user program debugger
     void DumpState();		// print the user CPU and memory state 
-
+    
 
 // Data structures -- all of these are accessible to Nachos kernel code.
 // "public" for convenience.
@@ -188,6 +188,8 @@ class Machine {
 // space, stored in memory), there is only one TLB (implemented in hardware).
 // Thus the TLB pointer should be considered as *read-only*, although 
 // the contents of the TLB are free to be modified by the kernel software.
+    bool *referenceBit;
+    long long int *LRUTimeStamp;
 
     TranslationEntry *tlb;		// this pointer should be considered 
 					// "read-only" to Nachos kernel code

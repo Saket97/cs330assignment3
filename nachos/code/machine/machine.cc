@@ -59,10 +59,12 @@ void CheckEndian()
 Machine::Machine(bool debug)
 {
     int i;
-
+    
     for (i = 0; i < NumTotalRegs; i++)
         registers[i] = 0;
     mainMemory = new char[MemorySize];
+    referenceBit = new bool[NumPhysPages];
+    LRUTimeStamp = new long long int[NumPhysPages];
     for (i = 0; i < MemorySize; i++)
       	mainMemory[i] = 0;
     for (i = 0; i < NumPhysPages; i++)
@@ -70,6 +72,8 @@ Machine::Machine(bool debug)
     //printf("mem size = %d\n", MemorySize);
     for(i = 0; i<NumPhysPages; i++){
         threadPID[i] = -1;
+        referenceBit[i] = 0;
+        LRUTimeStamp[i] = 0;
         //thPID[i] = -1;
         threadVPN[i] = -1;
         //thVPN[i] = -1;

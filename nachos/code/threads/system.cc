@@ -7,10 +7,7 @@
 
 #include "copyright.h"
 #include "system.h"
-struct LRU_node{
-   int ppn;
-   int refer_bit;
- };
+
 // This defines *all* of the global data structures used by Nachos.
 // These are all initialized and de-allocated by this file.
 
@@ -29,9 +26,8 @@ unsigned thread_index;			// Index into this array (also used to assign unique pi
 bool initializedConsoleSemaphores;
 bool exitThreadArray[MAX_THREAD_COUNT];  //Marks exited threads
 int pagesAllocated;
-List *FIFO_list= new List;
-List *LRU_list = new List;
-List *LRU_clock_list = new List;
+int LRU_Clock_ptr;
+List *FIFOQueue;
 TimeSortedWaitQueue *sleepQueueHead;	// Needed to implement syscall_wrapper_Sleep
 
 int schedulingAlgo;			// Scheduling algorithm to simulate
@@ -209,7 +205,7 @@ Initialize(int argc, char **argv)
     cpu_burst_start_time = stats->totalTicks;
     replAlgo = 0;
     pagesAllocated = 0;
-
+    FIFOQueue = new List;
     interrupt->Enable();
     CallOnUserAbort(Cleanup);			// if user hits ctl-C
     

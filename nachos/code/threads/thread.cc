@@ -97,7 +97,9 @@ NachOSThread::NachOSThread(char* threadName, int nice)
 NachOSThread::~NachOSThread()
 {
     DEBUG('t', "Deleting thread \"%s\"\n", name);
+#ifdef USER_PROGRAM
     delete space;
+#endif
 
     ASSERT(this != currentThread);
     if (stack != NULL)
