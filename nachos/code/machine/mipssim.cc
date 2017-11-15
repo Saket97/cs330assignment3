@@ -102,7 +102,7 @@ Machine::OneInstruction(Instruction *instr)
     // Fetch instruction 
     if (!machine->ReadMem(registers[PCReg], 4, &raw))
 	return;			// exception occurred
-    pt();
+    //pt();
     instr->value = raw;
     instr->Decode();
 
