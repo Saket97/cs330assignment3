@@ -19,6 +19,7 @@
 #include "switch.h"
 #include "synch.h"
 #include "system.h"
+#include "machine.h"
 
 #define STACK_FENCEPOST 0xdeadbeef	// this is put at the top of the
 					// execution stack, for detecting 
@@ -30,6 +31,7 @@
 //
 //	"threadName" is an arbitrary string, useful for debugging.
 //----------------------------------------------------------------------
+extern int pagesAllocated;
 
 NachOSThread::NachOSThread(char* threadName, int nice)
 {
@@ -95,6 +97,7 @@ NachOSThread::NachOSThread(char* threadName, int nice)
 NachOSThread::~NachOSThread()
 {
     DEBUG('t', "Deleting thread \"%s\"\n", name);
+    delete space;
 
     ASSERT(this != currentThread);
     if (stack != NULL)
@@ -231,7 +234,6 @@ NachOSThread::Exit (bool terminateSim, int exitcode)
     (void) interrupt->SetLevel(IntOff);
     ASSERT(this == currentThread);
 
-    printf("............................................................sldkjflskjf\n");
     DEBUG('t', "Finishing thread \"%s\"\n", getName());
 
     threadToBeDestroyed = currentThread;
@@ -283,20 +285,20 @@ NachOSThread::Exit (bool terminateSim, int exitcode)
        else interrupt->Idle();      // no one to run, wait for an interrupt
        nextThread = scheduler->SelectNextReadyThread();
     }
-    TranslationEntry *delPage = space->GetPageTable();
-    int numVirtualPages = space->GetNumPages();
+    /*TranslationEntry *delPage = space->GetPageTable();
+    int numVirtualPages = this->space->GetNumPages();
 
     int page;
     for(int i = 0; i<numVirtualPages; i++){
-        if(!delPage[i].shared){
-            if(delPage[i].valid){
-                page = delPage[i].physicalPage;
-                machine->threadPID[page] = -1;
-                machine->threadVPN[page] = -1;
+        if(!space->KernelPageTable[i].shared){
+            if(space->KernelPageTable[i].valid){
+                page = space->KernelPageTable[i].physicalPage;
+                //machine->threadPID[page] = -1;
+                //machine->threadVPN[page] = -1;
                 pagesAllocated--;
             }
         }
-    }
+    }*/
     scheduler->ScheduleThread(nextThread); // returns when we've been signalled
 }
 

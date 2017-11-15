@@ -21,11 +21,11 @@
 
 class ProcessAddressSpace {
   public:
-    ProcessAddressSpace(OpenFile *executable, char* buffer);	// Create an address space,
+    ProcessAddressSpace(OpenFile *executable, char* buffer, int pd);	// Create an address space,
 					// initializing it with the program
 					// stored in the file "executable"
 
-    ProcessAddressSpace (ProcessAddressSpace *parentSpace);	// Used by fork
+    ProcessAddressSpace (ProcessAddressSpace *parentSpace, int pd);	// Used by fork
 
     ~ProcessAddressSpace();			// De-allocate an address space
 
@@ -44,6 +44,7 @@ class ProcessAddressSpace {
     void CopyPageData(unsigned vpn, bool useNoffH);
     unsigned RandReplacement(unsigned vpn, int pageToIgnore);
     void Backup(int vpn, int pid);
+    int cpid;
     NoffHeader noffH;
     char* filename;
 

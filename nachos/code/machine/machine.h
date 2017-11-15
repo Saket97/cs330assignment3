@@ -32,10 +32,13 @@
 					// the disk sector size, for
 					// simplicity
 
-#define NumPhysPages 2 
+#define NumPhysPages 4
 //#define NumPhysPages    1024
 #define MemorySize 	(NumPhysPages * PageSize)
 #define TLBSize		4		// if there is a TLB, make it small
+
+extern int thPID[NumPhysPages];
+extern int thVPN[NumPhysPages];
 
 enum ExceptionType { NoException,           // Everything ok!
 		     SyscallException,      // A program executed a system call.

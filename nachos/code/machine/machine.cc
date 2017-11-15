@@ -19,6 +19,8 @@ static char* exceptionNames[] = { "no exception", "syscall",
 				"illegal instruction" };
 extern bool sharedPages[NumPhysPages];
 extern void pt();
+extern int thPID[NumPhysPages];
+extern int thVPN[NumPhysPages];
 
 //----------------------------------------------------------------------
 // CheckEndian
@@ -68,7 +70,9 @@ Machine::Machine(bool debug)
     //printf("mem size = %d\n", MemorySize);
     for(i = 0; i<NumPhysPages; i++){
         threadPID[i] = -1;
+        //thPID[i] = -1;
         threadVPN[i] = -1;
+        //thVPN[i] = -1;
     }
 
 #ifdef USE_TLB

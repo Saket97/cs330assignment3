@@ -38,7 +38,11 @@ LaunchUserProcess(char *filename)
 	printf("Unable to open file %s\n", filename);
 	return;
     }
-    space = new ProcessAddressSpace(executable, filename);  
+    space = new ProcessAddressSpace(executable, filename, 0);  
+    ProcessAddressSpace *tempSpace = currentThread->space;
+    if(tempSpace != NULL){
+        delete tempSpace;
+    }
     currentThread->space = space;
     //printf("exec = %x\n", executable);
     //printf("Oages = %d\n", space->GetNumPages());
@@ -164,7 +168,7 @@ ReadInputAndFork (char *filename)
       }
       sprintf(buffer,"Thread_%d",i+1);
       NachOSThread *child = new NachOSThread(buffer, priority[i]);
-      child->space = new ProcessAddressSpace (inFile, batchProcesses[i]);
+      child->space = new ProcessAddressSpace (inFile, batchProcesses[i], child->GetPID());
       delete inFile;
       child->space->InitUserModeCPURegisters();             // set the initial register values
       child->SaveUserState ();
